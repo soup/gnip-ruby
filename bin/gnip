@@ -1,0 +1,651 @@
+#! /usr/bin/env ruby
+
+require 'gnip'
+require 'main'
+require 'pp'
+require 'yaml'
+
+Main {
+##
+  description <<-__
+    gnip.rb is *the* clinically proven, most effective way, to keep your ruby
+    codez on the pulse of the freaking interwebs.  gnip.rb slings rest-fu
+    around like mr.t slings suckas while rocking out to deep-house and pouring
+    wine for the ladeez.  gnip.rb brings you power and speed with a silkly
+    smooth mixture of equal parts restclient, nokogiri, tagz, and threadify.
+    sit back and let gnip.rb bring the very tastiest portions of the tubes
+    down onto your very own hard drive for your dining pleasure.
+
+    we have what you are looking for.
+  __
+
+##
+  examples <<-__
+  @quick
+    . sup on digg recently?
+        gnip notification digg --ago=30 --thru=now
+
+    . and twitter right now?
+        gnip notification twitter
+
+    . stalk someone on tumblr
+        gnip filter rule create tumblr catch-him-in-the-act actor:boyfriend
+        gnip activity digg --filter=catch-him-in-the-act --bucket=all
+
+  @setup
+    . dump the current gnip config
+        gnip config
+
+    . create a ~/.gnip.yml config file
+        gnip config generate
+    
+    . ping gnip to verify your config
+        gnip ping
+
+    . show gnip clock shift from your local time
+        gnip clock_drift
+
+  @publisher
+    . list gnip publishers
+        gnip publisher list
+
+    . list publishers in the /my scope
+        gnip publisher list --scope=my
+
+    . create a publisher name 'publisher-name' in the /my scope with actor and keyword rules
+        gnip publisher create my-publisher actor keyword --scope=my
+
+    . show a publisher by name
+        gnip publisher show my-publisher
+
+    . delete a publisher in the /my scope
+        gnip publisher delete my-publisher --scope=my
+
+
+  @activity | @notification
+    . list the activity stream of a publisher
+        gnip notification stream digg
+
+    . list the activity of a publisher
+        gnip notification list digg
+
+    . list the activity of a publisher 10 minutes ago
+        gnip notification list digg --ago=10
+
+    . list all activity of a publisher starting 60-10 minutes (parallel requests)
+        gnip notification list digg --ago=60 --thru=10
+
+    . list all possible activity of a publisher
+        gnip notification list digg --bucket=all
+
+    . list the filtered activity of a publisher
+        gnip activity list digg --filter=my-filter-name --ago=60 --thru=42
+
+  @filter
+    . create a publisher filter for two actors
+        gnip filter create digg my-filter-name --full_data=true actor:mohadata actor:livefree12
+
+    . create a publisher filter from a file full of many rules (same format as command-line, one per line)
+        gnip filter create digg my-filter-name --input=file-full-of-rules.txt
+
+    . append rules to an existing publisher filter
+        gnip filter rule create digg my-filter-name actor:foobar actor:barfoo
+
+    . append rules to an existing publisher filter in bulk
+        gnip filter rule create digg my-filter-name --input=input
+
+    . list a specific rule for a publisher's filter
+        gnip filter rule list digg my-filter-name actor:livefree12
+
+    . delete a specific rule from an existing publisher filter
+        gnip filter rule delete digg my-filter-name actor:barfoo
+
+    . list your filters on a publisher
+        gnip filter list digg
+
+  @publish
+    . push a yml activity to a publisher
+        gnip activity publish my-publisher ./sample/data/activity.yml --scope=my
+
+    . scan for what you just posted (roughly)
+        gnip activity list my-publisher --scope=my --ago=2 --thru=now
+
+  @utility
+    . encode data
+        gnip encode 'some content'
+
+    . decode data
+        gnip encode 'some content' | gnip decode -
+
+    . round trip data
+        echo 'some content' | gnip encode - | gnip decode -
+  __
+
+##
+  author 'ara.t.howard@gmail.com'
+
+##
+  usage :LIBRARY, <<-__
+    see this program, samples/*,  and test/**/**, for usage
+  __
+
+  usage :URI, <<-__
+    http://gnip.com
+  __
+
+  usage :INSTALL, <<-__
+    $sudo gem install gnip
+  __
+
+##
+  option('--username', '-U'){
+    argument 'required'
+    cast{|value| Gnip.username = value}
+  }
+
+  option('--password', '-P'){
+    argument 'required'
+    cast{|value| Gnip.password = value}
+  }
+
+  option('--scope', '-S'){
+    argument 'required'
+    default 'gnip'
+  }
+
+  option('--name', '-N'){
+    argument 'required'
+  }
+
+  option('--ago', '-a'){
+    argument 'required'
+    cast :integer
+  }
+
+  option('--thru', '-t'){
+    argument 'required'
+    cast{|value| Integer(value =~ /current|now/ ? 0 : value)}
+  }
+
+  option('--bucket', '-b'){
+    argument 'required'
+  }
+
+  option('--filter', '-f'){
+    argument 'required'
+  }
+
+  option('--style', '-s'){
+    argument 'required'
+  }
+
+  option('--force'){
+    argument 'optional'
+    cast :boolean
+  }
+
+  option('--log', '-l'){
+    argument :optional
+  }
+
+  option('--input', '-i'){
+    argument 'required'
+    cast{|value| (value =~ /-/ ? STDIN.readlines : IO.readlines(value)).map{|line| line.strip}}
+  }
+
+  def before_run
+    if log = params['log'].value
+      log = 'stderr' if log == true
+      ENV['GNIP_HTTP_LOG'] = log
+    end
+  end
+
+
+##
+  mode(:config) do
+    description 'dump out the discovered gnip config'
+    def run
+      y Gnip.config.default.to_hash
+    end
+
+    mode(:generate) do
+      description 'generate a template config file'
+      def run
+        path = Gnip.config.default.class.default_path
+        abort "#{ path } exists!" if test(?s, path)
+        open(path, 'w') do |fd|
+          config = {'username' => 'YOU@ROCK.COM', 'password' => 'ANGINA'}
+          fd.puts config.to_yaml
+        end
+        system "#{ ENV['EDITOR']||:vim } #{ path }"
+        puts path
+      end
+    end
+  end
+
+##
+  mode(:ping) do
+    def run
+      y Gnip.ping
+    end
+  end
+
+##
+  mode(:clock_drift) do
+    def run
+      force = params[:force].value
+      y Gnip.clock_drift(:force => force)
+    end
+  end
+
+##
+  mode(:encode) do
+    def run
+      stdin = argv.delete('-')
+      data = argv.join
+      data += STDIN.read if stdin
+      STDOUT.write Gnip.encode(data)
+    end
+  end
+
+  mode(:decode) do
+    def run
+      stdin = argv.delete('-')
+      data = argv.join
+      data += STDIN.read if stdin
+      STDOUT.write Gnip.decode(data)
+    end
+  end
+
+  mode(:version) do
+    def run
+      puts Gnip.version
+    end
+  end
+
+##
+  mode(:publisher){
+##
+    mode(:create){
+      description 'create a publisher yo'
+      def run
+        scope = param[:scope].value
+        name = param[:name].value || argv.shift || abort('no name')
+        rules = argv
+
+        publisher = Gnip.publisher.create(name, :scope => scope, :rules => rules)
+        y publisher.name
+      end
+    }
+##
+    mode(:list){
+      description "list publishers"
+      def run
+        scope = param[:scope].value
+        list = Gnip.publisher.list(:scope => scope)
+        y list.map{|publisher| publisher.name}
+      end
+    }
+##
+    mode(:delete){
+      description 'nuke a publisher yo'
+      def run
+        scope = param[:scope].value
+        name = param[:name].value || argv.shift || abort('no name')
+
+        publisher = Gnip.publisher.for(name, :scope => scope)
+        if publisher
+          publisher.delete
+          y publisher.name
+        else
+          exit 42
+        end
+      end
+    }
+##
+    mode(:inspect){
+      description 'inspect a publisher'
+
+      def run
+        scope = param[:scope].value
+        name = param[:name].value || argv.shift || abort('no name')
+        publisher = Gnip.publisher.for(name, :scope => scope)
+        publisher ? pp(publisher) : exit(42)
+      end
+    }
+##
+    mode(:show){
+      description 'show a publisher'
+
+      def run
+        scope = param[:scope].value
+        name = param[:name].value || argv.shift || abort('no name')
+        publisher = Gnip.publisher.for(name, :scope => scope)
+        if publisher
+          y publisher.name => publisher.rules.map{|rule| rule.to_s}
+        else
+          exit(42)
+        end
+      end
+    }
+  }
+
+##
+    mixin(:activities){
+
+      def limited_activity_view activity
+        oh = 
+          Gnip.orderedhash[
+            'activity_id', activity.activity_id,
+            'at', activity.at,
+            'action', activity.action,
+            'url', activity.url,
+            'sources', activity.sources,
+            'keywords', activity.keywords,
+            'places', activity.places,
+            'actors', activity.actors,
+            'destination_url', activity.destination_urls,
+            'tags', activity.tags,
+            'tos', activity.tos,
+            'regarding_url', activity.regarding_urls
+          ]
+      end
+
+      mode(:list){
+        description 'access publisher activity'
+        def run
+          scope = param[:scope].value
+          ago = param[:ago].value
+          thru = param[:thru].value
+          bucket = param[:bucket].value
+          style = param[:style].value || self.class.const_get(:Style)
+          filter = param[:filter].value
+
+          name = param[:name].value || argv.shift || abort('no name')
+
+          publisher = Gnip.publisher.for(name, :scope => scope)
+          activities = publisher.activity(:filter => filter, :style => style, :ago => ago, :bucket => bucket, :thru => thru)
+
+          list = []
+
+          activities.each do |activity|
+            list << limited_activity_view(activity)
+          end
+
+          y list 
+        end
+      }
+##
+      mode(:stream){
+        description 'dump the activity stream listing for a publisher'
+        def run
+          scope = param[:scope].value
+          name = param[:name].value || argv.shift || abort('no name')
+          style = param[:style].value || self.class.const_get(:Style)
+
+          publisher = Gnip.publisher.for(name, :scope => scope)
+          if publisher
+            activity_stream = publisher.activity_stream(:style => style)
+            y :updated_at => activity_stream.updated_at.to_s, :buckets => activity_stream.buckets.to_a
+          else
+            exit 42
+          end
+        end
+      }
+    }
+
+##
+    mode(:activity){
+      const_set :Style, 'activity'
+      mixin :activities
+##
+      mode(:publish){
+        description 'publish activities to a publisher'
+        argument('name')
+        argument('yaml_input_file_or_stdin'){ optional true }
+
+        def run
+          scope = param[:scope].value
+          name = param[:name].value
+          yaml_input_file_or_stdin = params[:yaml_input_file_or_stdin]||'-'
+
+          input = yaml_input_file_or_stdin.value
+
+          obj =
+            if input == '-'
+              YAML.load(STDIN.read)
+            else
+              YAML.load(open(input){|f| f.read})
+            end
+
+          hashes = [obj] unless obj.is_a?(Array)
+
+          publisher = Gnip.publisher.for(name, :scope => scope)
+
+          if publisher
+            activities = []
+
+            hashes.each do |hash|
+              payload = hash['payload']
+              raw = (payload && payload.is_a?(Hash) && payload['raw'])
+              if raw =~ %r/^\s*@(.*)\s*$/
+                raw = $1.strip
+                raw = raw == '-' ? STDIN.read : IO.read(raw)
+                payload['raw'] = raw
+              end
+
+              activity = Gnip.activity.from_hash(hash)
+              activities << activity
+            end
+            publisher.publish(activities)
+
+            list = activities.map{|activity| limited_activity_view(activity)}
+            y list
+          else
+            exit 42
+          end
+        end
+      }
+    }
+
+##
+    mode(:notification){
+      const_set :Style, 'notification'
+      mixin :activities
+    }
+
+##
+    mode(:filter){
+##
+      mode(:create){
+        description 'create a filter'
+
+        argument('publisher_name')
+        argument('filter_name')
+        argument('rules'){ arity -1 }
+
+        option('--full_data'){
+          argument 'required'
+          default false
+          cast :boolean
+        }
+        option('--post_url'){
+          argument 'required'
+        }
+
+        def run
+          scope = param[:scope].value
+          publisher_name = param[:publisher_name].value
+          filter_name = param[:filter_name].value
+          rules = param[:rules].values
+          post_url = param[:post_url].value
+          full_data = param[:full_data].value
+          input = param[:input].value
+
+          rules.push(*input) if input
+          rules.map! do |rule|
+            type, value = rule.strip.split(/:/, 2)
+            {:type => type, :value => value} if type and value
+          end.compact
+
+          publisher = Gnip.publisher.for(publisher_name, :scope => scope)
+          if publisher
+            filter = publisher.filter.create(filter_name, rules, :full_data => full_data, :post_url => post_url)
+            y filter.name
+          else
+            exit 42
+          end
+        end
+      }
+##
+      mode(:list){
+        description 'list filters'
+
+        def run
+          scope = param[:scope].value
+          name = param[:name].value || argv.shift || abort('no name')
+
+          publisher = Gnip.publisher.for(name, :scope => scope)
+          if publisher
+            filters = publisher.filter.list
+            y filters.map{|filter| filter.name}
+          else
+            exit 42
+          end
+        end
+      }
+##
+      mode(:inspect){
+        description 'inspect a filter'
+
+        argument('publisher_name')
+        argument('filter_name')
+
+        def run
+          scope = param[:scope].value
+          publisher_name = param[:publisher_name].value
+          filter_name = param[:filter_name].value
+
+          publisher = Gnip.publisher.for(publisher_name, :scope => scope)
+          if publisher
+            filter = publisher.filter.for(filter_name)
+            filter.publisher = nil rescue nil # just prettier output
+            pp filter
+          else
+            exit 42
+          end
+        end
+      }
+##
+      mode(:delete){
+        description 'delete a filter'
+
+        argument('publisher_name')
+        argument('filter_name')
+
+        def run
+          scope = param[:scope].value
+          publisher_name = param[:publisher_name].value
+          filter_name = param[:filter_name].value
+
+          publisher = Gnip.publisher.for(publisher_name, :scope => scope)
+          if publisher
+            filter = publisher.filter.for(filter_name)
+            filter.delete
+            y filter.name
+          else
+            exit 42
+          end
+        end
+      }
+
+  ##
+      mode(:rule){
+        mode(:list){
+          description 'list the rules for a filter'
+
+          argument('publisher_name')
+          argument('filter_name')
+          argument('rule')
+
+
+          def run
+            scope = param[:scope].value
+            publisher_name = param[:publisher_name].value
+            filter_name = param[:filter_name].value
+            rule = param[:rule].value
+
+            type, value = rule.split(/:/, 2)
+
+            publisher = Gnip.publisher.for(publisher_name, :scope => scope)
+            if publisher
+              filter = publisher.filter.for(filter_name)
+              y filter.rule.list(:type => type, :value => value).inspect
+            else
+              exit 42
+            end
+          end
+        }
+
+        mode(:create){
+          description 'append rules to a filter'
+
+          argument('publisher_name')
+          argument('filter_name')
+          argument('rules'){ arity -1 }
+
+          def run
+            scope = param[:scope].value
+            publisher_name = param[:publisher_name].value
+            filter_name = param[:filter_name].value
+            rules = param[:rules].values
+            input = param[:input].value
+
+            rules.push(*input) if input
+
+            publisher = Gnip.publisher.for(publisher_name, :scope => scope)
+            if publisher
+              filter = publisher.filter.for(filter_name)
+              rules = filter.rule.create(*rules)
+              y rules.map{|rule| rule.to_s}
+            else
+              exit 42
+            end
+          end
+        }
+
+        mode(:delete){
+          description 'delete a filter rule'
+
+          argument('publisher_name')
+          argument('filter_name')
+          argument('rule')
+
+
+          def run
+            scope = param[:scope].value
+            publisher_name = param[:publisher_name].value
+            filter_name = param[:filter_name].value
+            rule = param[:rule].value
+
+            type, value = rule.split(/:/, 2)
+
+            publisher = Gnip.publisher.for(publisher_name, :scope => scope)
+            if publisher
+              filter = publisher.filter.for(filter_name)
+              rule = filter.rule.list(:type => type, :value => value)
+              rule.delete
+              y rule
+            else
+              exit 42
+            end
+          end
+        }
+      }
+    }
+
+  
+  def run
+    abort usage.to_s
+  end
+}

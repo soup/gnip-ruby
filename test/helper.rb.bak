@@ -1,0 +1,28 @@
+module Gnip
+  module Test
+    module Helper
+      def xml_cmp(a, b)
+        eq_all_but_zero = Object.new.instance_eval do
+          def ==(other)
+            Integer(other) == 0 ? false : true
+          end
+          self
+        end
+        a = XmlSimple.xml_in(a.to_s, 'normalisespace' => eq_all_but_zero)
+        b = XmlSimple.xml_in(b.to_s, 'normalisespace' => eq_all_but_zero)
+        a == b
+      end
+    end
+  end
+end
+
+module Kernel
+private
+  def Test(*args, &block)
+    Class.new(::Test::Unit::TestCase) do
+      include Gnip::Test::Helper
+      args.push 'default' if args.empty?
+      context(*args, &block)
+    end
+  end
+end

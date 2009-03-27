@@ -1,0 +1,1201 @@
+
+    *Gnip API v2.1 (https://demo-v21.gnip.com) *(doc rev 12)
+
+This document is divided into three sections:
+
+
+    * Introduction to the Gnip Platform <#Introduction>
+          o Before you can do anything you'll need an account. Get one
+            here <https://demo-v21.gnip.com/>.
+    * Overview of the Gnip Platform <#Overview>
+    * Examples <#Examples>
+          o Gnip Activities <#Examples_of_Activities>
+          o Data Consumers <#Examples_for_Subscribers>
+          o Publishers <#Examples_for_Publishers>
+    * Gnip Platform Capabilities and Terminology
+      <#Platform_Capabilities_and_Terminology>
+          o Publisher and Filter Scoping
+          o Activity Buckets
+          o Convenience Libraries <http://github.com/gnip>
+          o Current list of Publishers
+            <https://demo-v21.gnip.com/publishers.html>
+          o Gnip XML schema document
+            <https://demo-v21.gnip.com/schema/gnip.xsd>
+
+*
+Introduction to the Gnip Platform*
+
+
+Gnip provides a set of services for accessing, filtering and integrating
+data from web APIs and feeds.  To get started using the Gnip Platform
+first create an account.  You can create one here
+<https://demo-v21.gnip.com/> in seconds. The Gnip Platform API is based
+on the REST approach (see Wikipedia for the explanation
+<http://en.wikipedia.org/wiki/Representational_State_Transfer> if you
+need one), and we provide convenience libraries for several popular
+languages (PHP, Java, .NET, Python, Perl and Ruby), so you can be up and
+running in the language or your choice in no time.   The Gnip API
+version of this document is 2.1. At Gnip we use the hostname as the way
+to version the API, this means to access the 2.1 version of the Gnip
+API, you will need to use the host: *https://demo-v21.gnip.com*
+<https://demo-v21.gnip.com/>*.
+*
+
+
+There are two main data integration use cases supported by the Gnip
+Platform: Publishers & Data Consumers. Publishers represent sources of
+data available through Gnip Platform from different web APIs and feeds
+across the Internet, and Data Consumers, represent the developers and
+companies that use the Gnip Platform to access, filter and integrate
+social and business data into their applications. Developers have the
+choice of using the Gnip Developer Site <http://prod.gnipcentral.com> or
+the Gnip Platform APIs to integrate data.
+
+
+The Gnip Platform APIs provides access to normalized *event* data. An
+*activity* contains all event meta-data and the data payload.  The data
+payload represents the full raw data, from a data source (e.g, such
+Digg, Delicious, Twitter, Sixapart, etc).   A *notification* is the
+subset of an *activity *and contains all the event meta-data, just no
+data payload.  By providing these two options developers obtain the
+flexibility to request the type of data needed for their application and
+use case.   Also, the data payloads included in an *activity* provide
+the raw, original, untouched (though encoded) event information  from
+the data source that Gnip maps to the normalized Gnip XML.   Gnip maps
+as much of the relevant raw data to the Gnip XML meta-data to assist
+Data Consumers so they do not need to proces the raw data payload at
+all. In order to protect the integrity of the Gnip XML, it is gzip'd and
+base64 encoded in the <raw> element. Data Consumers are responsible for
+decoding and un-gzip'ing the raw element if they need the original data
+(this can be easily done with the Gnip Convenience Libraries
+<http://github.com/gnip>).
+
+
+It is important to note that Data Consumers also have two options on how
+to receive data, either by a *subscription*, which represents the entire
+publisher "*firehose*" or by *filtering*, which represents specific
+views of a publisher data stream. Data Consumers can create filters
+<#Filter_terminology> for a specific publisher for either
+*notifications* or *activities*. 
+
+    * A *Firehose, *also sometimes called a *Public Timeline*, is the
+      stream of all the activities from a given Publisher. (Note: not
+      all Publishers support Public Timelines, and Public Timelines do
+      not always contain full data.)  To avoid Publisher name clashes
+      and to show which publishers are 'bless and endorsed by Gnip",
+      Publisher's are namespace scoped to either "gnip," "my," (private
+      only to the Gnip account creator) or "public" (not supported at
+      present). Public Timelines can be "polled" (HTTP GET) from Gnip.
+      If you wish to have data pushed to you, you will need to create a
+      *Filter*.
+    * A *Filter* is a stream containing all the activities or
+      notifications that meet a set of defined criteria, called *rules,
+      *that are defined by the Data Consumer. For example, Filters allow
+      Data Consumers to create data streams containing just the
+      information from the Publisher based on users they are interested
+      in (using Gnip *rule-type "actor"*), or all the data from
+      Publisher "foo," that are tagged with a given string (using the
+      Gnip *rule-type* *"tag"*).  When a Data Consumer creates a Filter
+      they are the only one who is granted access to use the filter.
+      Filters can be "polled" (HTTP GET) from a Gnip generated
+      end-point, or "pushed" (HTTP POST) to a Data Consumer POST URL
+      endpoint that is defined in the Filter. 
+
+
+In addition to the two approaches for defining data data consumption
+(see a Data Consumer example for more details
+<#Retrieve_recent_Activities_for_a_given_Publisher>), companies also can
+*publish* data into the Gnip Platform by mapping an existing data source
+to the Gnip XML schema. Here is an example of how to publish data
+<#Examples_for_Publishers> to the Gnip Platform.
+
+
+------------------------------------------------------------------------
+
+
+  Overview of the Gnip Platform
+
+<note: Andrew to add publisher and filter creation visuals for API use
+case and web app use case>  
+
+
+
+
+
+
+
+------------------------------------------------------------------------
+
+
+    Gnip API Usage Information
+
+    * Before you can do anything you will need an account. You can
+      create one here <https://demo-v21.gnip.com/> in seconds.
+    * All requests to Gnip must be made over HTTPS (HTTP over SSL/TLS).
+    * The following examples assume you're sending HTTP BASIC AUTH'd
+      requests to https://demo-v21.gnip.com
+    * There are a variety of convenience libraries for many popular
+      languages provided by Gnip to ease your integration. You can find
+      them here. <http://github.com/gnip>
+    * The current list of Gnip Certified Publishers can be found here
+      <https://demo-v21.gnip.com/publishers.html>.
+    * Gnip's XML schema can be found here
+      <https://demo-v21.gnip.com/schema/gnip.xsd>.
+    * Gnip Activity & Notification access
+          o To access activities, use the "/*activity*/" endpoint.
+          o To access notifications, use the "/*notification*/" endpoint.
+          o Individual filters support only one endpoint type
+            ("activity" or "notification"); not both.
+          o You can not access the directly access the activity endpoint
+            of a publisher for which you are not the owner *unless* you
+            create a filter.
+
+
+  Examples 
+
+
+      *Examples of Gnip Activities*
+
+The examples below are broken into Data Consumer and Publisher sections.  
+
+Most users of Gnip are Data Consumers, but depending on the application,
+a user may be a Data Consumer, a Publisher, or both.  Both Publishers
+and Data Consumers need to be familiar with Gnip activities which are
+individually represented by an <activity/> document and collections
+of <activity/> documents are wrapped in <activities/> documents.  Below
+are examples of each; the first example represents a
+"notification"-style activity that does not contain the activity's
+"full-data (payload)".  Second is a "full-data" <activities/> document
+example.  Documents like these are emitted by both a Publisher's
+notification stream as well as a Filter's notification and activity streams.
+
+
+      Sample of a Gnip Activity XML* for notifications
+      (.../notification/...)*
+
+<activities publisher="gnip-sample">
+    <activity>
+        <at>2009-02-02T17:05:01.000Z</at>
+        <action>post</action>
+        <activityID>0.33783490478</activityID>
+        <URL>http://gnipherald.com/stories/0.33783490478/jousting-gone-bad.xml</URL>
+        <source>Vignette-Web-Publisher</source>
+        <place>
+            <point>38.2638886 -106.126131</point>
+            <featurename>Chloride Mine</featurename>
+        </place>
+        <actor uid="12339948@4994" metaURL="http://gnipherald.com/profiles/jvaleski">jvaleski</actor>
+        <destinationURL>http://gnipherald.com/stories/0.33783490478/jousting-gone-bad.html</destinationURL>
+        <tag metaURL="http://gnipherald/about/tag/armor">armor</tag>
+        <tag metaURL="http://gnipherald/about/tag/staff">staff</tag>
+        <tag metaURL="http://gnipherald/about/tag/injury">injury</tag>
+        <to metaURL="http://gnipherald.com/profiles/barinek">barinek</to>
+        <regardingURL metaURL="http://apnewswire.com/jousting">http://apnewswire.com/jousting/accident.html</regardingURL>
+    </activity>
+</activities>
+
+*Sample of a Gnip Activity XML with full data enabled (.../activity/...)*
+
+<activities publisher="gnip-sample">
+    <activity>
+        <at>2009-02-02T17:16:01.000Z</at>
+        <action>post</action>
+        <activityID>0.516958128858</activityID>
+        <URL>http://gnipherald.com/stories/0.516958128858/jousting-gone-bad.xml</URL>
+        <source>Vignette-Web-Publisher</source>
+        <place>
+            <point>38.2638886 -106.126131</point>
+            <featurename>Chloride Mine</featurename>
+        </place>
+        <actor uid="12339948@4994" metaURL="http://gnipherald.com/profiles/jvaleski">jvaleski</actor>
+        <destinationURL>http://gnipherald.com/stories/0.516958128858/jousting-gone-bad.html</destinationURL>
+        <tag metaURL="http://gnipherald/about/tag/armor">armor</tag>
+        <tag metaURL="http://gnipherald/about/tag/staff">staff</tag>
+        <tag metaURL="http://gnipherald/about/tag/injury">injury</tag>
+        <to metaURL="http://gnipherald.com/profiles/barinek">barinek</to>
+        <regardingURL metaURL="http://apnewswire.com/jousting">http://apnewswire.com/jousting/accident.html</regardingURL>
+        <payload>
+            <title>Jousting Event Went Awry</title>
+            <body> Two drunken guys, two jousting sticks, blindfolds and
+running full bore down a hallway at each other, lead to a night in
+hospital for two university students.  One with chest injury the other
+unharmed. REST of BODY </body>
+            <mediaURL>http://images.gnipherald.com/jousting-thumbnail.jpg</mediaURL>
+            <raw>base64 encoded gzip compressed binary</raw>
+        </payload>
+    </activity>
+</activities>
+
+
+      Examples for Data Consumers
+
+
+      Retrieve recent Activities for a given Publisher
+
+This requires having a prior knowledge of the Publisher ID, a Publisher
+ID is usually just a commonly known name for the Publisher such as
+Publisher ID for twitter is "twitter". (A current list of Publisher IDs
+can be found here <https://demo-v21.gnip.com/publishers.html> --
+requires a Gnip account). In order to retrieve recent activities for a
+given Publisher (e.g. "*gnip-sample*"), construct a URL for the
+Publisher of interest and perform a HTTP GET to retrieve the
+|application/xml| representation of that activity stream; for details go
+here <#Activity_Buckets>. You can only access activities without full
+data, e.g. "notifications," for a Publisher's *Public* Timeline. If you
+want *full data*, you need to create a Filter and access it that way;
+for an example, go here <#Create_a_Filter_Example>. Publisher data is
+*namespaced*, that is, the list of publishers listed on the Gnip API
+site <https://demo-v21.gnip.com/> are scoped to "*gnip*". When you
+create a publisher, they will be scoped to "*my*".
+
+
+===>
+   GET /gnip/publishers/gnip-sample/notification/current.xml
+   Accept: application/xml
+
+<---
+   200 OK
+   Content-Type: application/xml 
+
+<activities publisher="gnip-sample">
+    <activity>
+        <at>2009-02-02T17:05:01.000Z</at>
+        <action>post</action>
+        <activityID>0.33783490478</activityID>
+        <URL>http://gnipherald.com/stories/0.33783490478/jousting-gone-bad.xml</URL>
+        <source>Vignette-Web-Publisher</source>
+        <place>
+            <point>38.2638886 -106.126131</point>
+            <featurename>Chloride Mine</featurename>
+        </place>
+        <actor uid="12339948@4994" metaURL="http://gnipherald.com/profiles/jvaleski">jvaleski</actor>
+        <destinationURL>http://gnipherald.com/stories/0.33783490478/jousting-gone-bad.html</destinationURL>
+        <tag metaURL="http://gnipherald/about/tag/armor">armor</tag>
+        <tag metaURL="http://gnipherald/about/tag/staff">staff</tag>
+        <tag metaURL="http://gnipherald/about/tag/injury">injury</tag>
+        <to metaURL="http://gnipherald.com/profiles/barinek">barinek</to>
+        <regardingURL metaURL="http://apnewswire.com/jousting">http://apnewswire.com/jousting/accident.html</regardingURL>
+    </activity>
+</activities>
+
+
+      Retrieve activity for a Publisher 'n' minutes ago (*up to 60
+      minutes in the past*)
+
+If you are interested in a point in the past, relative to now, you will
+need to determine what the difference is between you local clock and
+Gnip’s clock, to minimize clock drift as a variable in making requests
+for activities; for details go here <#Activity_Buckets>.
+
+
+===>
+
+  HEAD /
+
+<---
+
+  200 OK
+
+  Date: Mon, June 9 2008, 9:08:43
+
+
+The returned |Date| header field can be used to figure the difference
+between Gnip's clock and the local one. Once that is known, the activity
+bucket ID for the time of interest can be calculated. Once the activity
+bucket ID is known its URL can be constructed using the same format as
+above, replacing "current" with an activity bucket ID (e.g.|
+*200806090910*)|, and the data can be retrieved. See the below section
+called "Activity Buckets <#Activity_Buckets>". The activity bucket ID is
+represented in *UTC time*. Please note that the two buckets, current and
+0-1 minutes old contain a *variable* amount of data, that is, data will
+continue to be added to the buckets until a full minute has passed.
+Buckets that are from 1-2 minutes and older contain a *fixed* amount of
+data.
+
+|===>
+ GET /gnip//publishers/gnip-sample/notification/*200806090910*.xml
+ Accept: application/xml 
+<---
+ 200 OK
+ Content-Type: application/xml
+
+|
+
+<activities publisher="gnip-sample">
+    <activity>
+        <at>2009-02-02T17:05:01.000Z</at>
+        <action>post</action>
+        <activityID>0.33783490478</activityID>
+        <URL>http://gnipherald.com/stories/0.33783490478/jousting-gone-bad.xml</URL>
+        <source>Vignette-Web-Publisher</source>
+        <place>
+            <point>38.2638886 -106.126131</point>
+            <featurename>Chloride Mine</featurename>
+        </place>
+        <actor uid="12339948@4994" metaURL="http://gnipherald.com/profiles/jvaleski">jvaleski</actor>
+        <destinationURL>http://gnipherald.com/stories/0.33783490478/jousting-gone-bad.html</destinationURL>
+        <tag metaURL="http://gnipherald/about/tag/armor">armor</tag>
+        <tag metaURL="http://gnipherald/about/tag/staff">staff</tag>
+        <tag metaURL="http://gnipherald/about/tag/injury">injury</tag>
+        <to metaURL="http://gnipherald.com/profiles/barinek">barinek</to>
+        <regardingURL metaURL="http://apnewswire.com/jousting">http://apnewswire.com/jousting/accident.html</regardingURL>
+    </activity>
+</activities>
+
+*
+Create a Filter and retrieve its Activity*
+
+To create a Filter you need one, or more, "*rules*."  Each Publisher has
+a set of supported rule types which constrain the types of rules that
+can be specified for a Filter in a Publisher.  For example, if a
+Publisher supports the rule types "Actor" and "To", a Filter can contain
+rules of using those types but cannot contain rules of type
+"RegardingURL", "Tag", and "Source".  If a Filter is created with a rule
+type that a Publisher does not support, the server will return a
+response containing of an error message and error status code.  Here
+<https://demo-v21.gnip.com/publishers.html> is a list of Publishers. In
+order to find out what rule types a publisher supports you can look here
+<https://demo-v21.gnip.com/publishers.html>.
+
+
+  Send an HTTP POST request to create a Filter.  For details go here
+<#Filters_Details>.
+
+|===>
+ POST /gnip/publishers/gnip-sample/filters.xml
+ Accept: application/xml
+ Content-Type: application/xml
+ 
+ <filter name="examplefilter" fullData="true">
+    <rule type="actor">jvaleski</rule>
+    <rule type="actor">ajackson</rule>
+</filter>||
+<---
+ 200 OK
+ Content-Type: application/xml
+
+ <result>Success</result>|
+
+Once the Filter is created, accessing full-data activity associated with
+it is similar to accessing Publishers' notifications. Note that since
+fullData was specified as true in this example, the result will include
+the activity payload, and you'll access it via the ".../activity/..."
+URI. Trying to access the ".../notification/..." URI would generate a
+"Not Authorized" error.
+
+|===>
+ GET /gnip/publishers/gnip-sample/filters/examplefilter/activity/current.xml
+ Accept: application/xml
+<---
+ 200 OK
+ Content-Type: application/xml
+ 
+|<activities publisher="gnip-sample">
+    <activity>
+        <at>2009-02-02T17:16:01.000Z</at>
+        <action>post</action>
+        <activityID>0.516958128858</activityID>
+        <URL>http://gnipherald.com/stories/0.516958128858/jousting-gone-bad.xml</URL>
+        <source>Vignette-Web-Publisher</source>
+        <place>
+            <point>38.2638886 -106.126131</point>
+            <featurename>Chloride Mine</featurename>
+        </place>
+        <actor uid="12339948@4994" metaURL="http://gnipherald.com/profiles/jvaleski">jvaleski</actor>
+        <destinationURL>http://gnipherald.com/stories/0.516958128858/jousting-gone-bad.html</destinationURL>
+        <tag metaURL="http://gnipherald/about/tag/armor">armor</tag>
+        <tag metaURL="http://gnipherald/about/tag/staff">staff</tag>
+        <tag metaURL="http://gnipherald/about/tag/injury">injury</tag>
+        <to metaURL="http://gnipherald.com/profiles/barinek">barinek</to>
+        <regardingURL metaURL="http://apnewswire.com/jousting">http://apnewswire.com/jousting/accident.html</regardingURL>
+        <payload>
+            <title>Jousting Event Went Awry</title>
+            <body>Two drunken guys, two jousting sticks, blindfolds and running full bore down a hallway at each other, lead to a night in hospital for two university students.  One with chest injury the other unharmed. REST of BODY</body>
+            <mediaURL>http://images.gnipherald.com/jousting-thumbnail.jpg</mediaURL>
+            <raw>base64 encoded gzip compressed binary</raw>
+        </payload>
+    </activity>
+</activities>
+
+
+      Create a Filter and have its Activity POSTed to specified URL
+
+Create a Filter as in the previous example and in addition specify a
+postURL to which activities should be HTTP POSTed. Gnip validates the
+URL by making a HEAD request to it, so ensure that the postURL responds
+successfully to an HTTP HEAD request.  For details go here
+<#Filters_Details>.
+
+|===>
+ POST /gnip/publishers/gnip-sample/filters.xml
+ Accept: application/xml
+ Content-Type: application/xml
+ 
+ <filter name="examplefilter" fullData="true">
+    <postURL>http://mysite.example/inbound-activity-handler.cgi</postURL>
+    <rule type="actor">jvaleski</rule>
+    <rule type="actor">ajackson</rule>
+</filter>||
+<---
+ 200 OK
+ Content-Type: application/xml
+
+|<result>Success</result>
+
+Once the Filter is created, any activity that matches rules in the
+filter will be POSTed to the specified URL; see below for an example
+HTTP exchange that occurs when sending activities to a postURL. Gnip
+activity POSTing is currently fire-and-forget and does not interpret
+HTTP response codes from the POST.
+
+|===>
+ POST http://mysite.example/inbound-activity-handler.cgi
+ Content-Type: application/xml
+ 
+||
+
+<?xml version="1.0" encoding="utf-16"?>
+<activities publisher="gnip-sample">
+    <activity>
+        <at>2009-02-02T17:16:01.000Z</at>
+        <action>post</action>
+        <activityID>0.516958128858</activityID>
+        <URL>http://gnipherald.com/stories/0.516958128858/jousting-gone-bad.xml</URL>
+        <source>Vignette-Web-Publisher</source>
+        <place>
+            <point>38.2638886 -106.126131</point>
+            <featurename>Chloride Mine</featurename>
+        </place>
+        <actor uid="12339948@4994" metaURL="http://gnipherald.com/profiles/jvaleski">jvaleski</actor>
+        <destinationURL>http://gnipherald.com/stories/0.516958128858/jousting-gone-bad.html</destinationURL>
+        <tag metaURL="http://gnipherald/about/tag/armor">armor</tag>
+        <tag metaURL="http://gnipherald/about/tag/staff">staff</tag>
+        <tag metaURL="http://gnipherald/about/tag/injury">injury</tag>
+        <to metaURL="http://gnipherald.com/profiles/barinek">barinek</to>
+        <regardingURL metaURL="http://apnewswire.com/jousting">http://apnewswire.com/jousting/accident.html</regardingURL>
+        <payload>
+            <title>Jousting Event Went Awry</title>
+            <body>Two drunken guys, two jousting sticks, blindfolds and running full bore down a hallway at each other, lead to a night in hospital for two university students.  One with chest injury the other unharmed. REST of BODY</body>
+            <mediaURL>http://images.gnipherald.com/jousting-thumbnail.jpg</mediaURL>
+            <raw>base64 encoded gzip compressed binary</raw>
+        </payload>
+    </activity>
+</activities>
+
+<---
+ 200 OK
+|
+
+A note on authentication: Gnip does not support a Filter owner
+specifying credentials to use on requests that post activities to a
+Filter's postURL. As an interim solution, a Filter owner can provide an
+opaque token on the postURL as part of the URL string.  If this token is
+only known to Gnip and the postURL's server, it can be validated on your
+server when Gnip sends activities to a postURL to ensure that POST
+requests originate from Gnip.
+
+
+      Examples for Publishers
+
+
+      Publish Activities to an Activity Stream
+
+If you are a Publisher interested in publishing Activities to an
+Activity Stream, POST application/xml to a Publisher created by you in
+the following example. For details go here
+<#Activity_Stream_Publishing>. Required fields are:
+
+*<at>*
+
+*<action>* 
+
+
+If a payload is added you must also include:
+
+*<raw>*
+
+
+The supported Gnip rule types are:
+
+*actor*
+
+*tag*
+
+*to*
+
+*regarding*
+
+*source*
+
+
+If you support one or more of the above rule types, the field for that
+type is required.
+
+
+===>
+
+|  |POST /my/publishers/PUBLISHER-NAME/activity.xml
+
+|  |Accept: application/xml
+
+|  |Content-Type: application/xml
+
+<activities publisher="gnip-sample">
+    <activity>
+        <at>2009-02-02T17:16:01.000Z</at>
+        <action>post</action>
+        <activityID>0.516958128858</activityID>
+        <URL>http://gnipherald.com/stories/0.516958128858/jousting-gone-bad.xml</URL>
+        <source>Vignette-Web-Publisher</source>
+        <place>
+            <point>38.2638886 -106.126131</point>
+            <featurename>Chloride Mine</featurename>
+        </place>
+        <actor uid="12339948@4994" metaURL="http://gnipherald.com/profiles/jvaleski">jvaleski</actor>
+        <destinationURL>http://gnipherald.com/stories/0.516958128858/jousting-gone-bad.html</destinationURL>
+        <tag metaURL="http://gnipherald/about/tag/armor">armor</tag>
+        <tag metaURL="http://gnipherald/about/tag/staff">staff</tag>
+        <tag metaURL="http://gnipherald/about/tag/injury">injury</tag>
+        <to metaURL="http://gnipherald.com/profiles/barinek">barinek</to>
+        <regardingURL metaURL="http://apnewswire.com/jousting">http://apnewswire.com/jousting/accident.html</regardingURL>
+        <payload>
+            <title>Jousting Event Went Awry</title>
+            <body> Two drunken guys, two jousting sticks, blindfolds and running full bore down a hallway at each other, lead to a night in hospital for two university students. One with chest injury the other unharmed. REST of BODY </body>
+            <mediaURL>http://images.gnipherald.com/jousting-thumbnail.jpg</mediaURL>
+            <raw>base64 encoded gzip compressed binary</raw>
+        </payload>
+    </activity>
+</activities>
+
+<---
+
+  200 OK
+
+|  |Content-Type: application/xml
+
+
+|  <result>Success</result>|
+
+
+
+------------------------------------------------------------------------
+
+
+  Platform Capabilities and Terminology
+
+
+*Response Codes
+
+*
+
+    * Typical HTTP response codes are used throughout the API.  A list
+      of HTTP response codes is here.
+      <http://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html>
+    * Requests that do not need to return data or have failed return an
+      XML document describing the result of the request.
+
+
+      Activity Streams
+
+Activity streams are collections of activities which may be retrieved
+and, in some situations, to which activities may be published.
+Publishers POST new activities to activity streams; they are the start
+of data flow through the system. Subscribers can retrieve activity data
+via activity buckets (see the Activity Buckets <#Activity_Buckets>
+section below).
+
+
+*https://demo-v21.gnip.com/my[gnip]/publishers/PUBLISHER-NAME/activity[notification].xml*
+
+|
+(Replace PUBLISHER-NAME with the name of an actual publisher. The list
+of current Publishers can be found here
+<https://demo-v21.gnip.com/publishers.html>)|
+
+GET:
+Returns an XML representation (Activity Stream XML
+<#Activity_Stream_XML>) of the activity Publisher activity stream.
+Response Content-Type: application/xml
+
+
+      Activity Stream XML
+
+An activity stream represented in XML looks like the following. Full
+Gnip XML schema can be found here
+<https://demo-v21.gnip.com/schema/gnip.xsd>.
+
+<?xml version="1.0" encoding="utf-16"?>
+<activityStream>
+    <activitiesAddedAt>2008-07-28T11:32:50Z</activitiesAddedAt>
+    <buckets>
+        <bucket href="/my[gnip]/publishers/PUBLISHER-NAME/activity/200807281130.xml" />
+        <bucket href="/my[gnip]/publishers/PUBLISHER-NAME/activity/200807281125.xml" />
+        <bucket href="/my[gnip]publishers/PUBLISHER-NAME/activity/200807281130.xml" />
+        <!-- ... -->
+    </buckets>
+</activityStream>
+
+
+        Activity Buckets
+
+Activity streams are segmented into buckets based on time. Each bucket
+contains all the activities for the stream that are reported during the
+bucket’s duration. Each bucket has an ID that is the time stamp, in UTC,
+of the first minute bucket. The bucket ID format is |%Y%m%d%H%M%S| (e.g.
+the strftime conversion spec). For example, bucket with ID
+|200806090913| would contain all activity reported during between 9:13
+am and 9:14 UTC am, inclusive, on June 9, 2008. Activity buckets are
+only valid for the last 60 minutes. The "current.xml" bucket holds the
+"current" activities up to one minute. Please note that the current
+bucket is not static, so retrieving data from this bucket may not be
+reliable for your application. The same goes for the 0-1 minute old
+bucket. Until the full minute is up, the bucket will continue to accrue
+data.
+
+
+*https://demo-v21.gnip.com/my[gnip]/publishers/PUBLISHER-NAME/notification/current.xml
+**https://demo-v21.gnip.com/my[gnip]/publishers/PUBLISHER-NAME/notification/BUCKET-ID.xml
+*
+*https://demo-v21.gnip.com/my[gnip]*/publishers/**PUBLISHER-NAME/**filters/FILTER-NAME/activity**[notification]**/current.xml**
+
+*https://demo-v21.gnip.com/my[gnip]*/publishers/**PUBLISHER-NAME/**filters/FILTER-NAME/activity**[notification]**/BUCKET-ID.xml**
+
+
+
+GET:
+Returns a representation (Activities XML <#Activities_XML>) of the
+activity bucket specified.
+Response Content-Type: application/xml
+
+
+        Activities XML
+
+
+Activity definitions are represented as XML documents similar to this.
+
+
+<activities publisher="gnip-sample">
+    <activity>
+        <at>2009-02-02T17:16:01.000Z</at>
+        <action>post</action>
+        <activityID>0.516958128858</activityID>
+        <URL>http://gnipherald.com/stories/0.516958128858/jousting-gone-bad.xml</URL>
+        <source>Vignette-Web-Publisher</source>
+        <place>
+            <point>38.2638886 -106.126131</point>
+            <featurename>Chloride Mine</featurename>
+        </place>
+        <actor uid="12339948@4994" metaURL="http://gnipherald.com/profiles/jvaleski">jvaleski</actor>
+        <destinationURL>http://gnipherald.com/stories/0.516958128858/jousting-gone-bad.html</destinationURL>
+        <tag metaURL="http://gnipherald/about/tag/armor">armor</tag>
+        <tag metaURL="http://gnipherald/about/tag/staff">staff</tag>
+        <tag metaURL="http://gnipherald/about/tag/injury">injury</tag>
+        <to metaURL="http://gnipherald.com/profiles/barinek">barinek</to>
+        <regardingURL metaURL="http://apnewswire.com/jousting">http://apnewswire.com/jousting/accident.html</regardingURL>
+        <payload>
+            <title>Jousting Event Went Awry</title>
+            <body> Two drunken guys, two jousting sticks, blindfolds and
+running full bore down a hallway at each other, lead to a night in
+hospital for two university students.  One with chest injury the other
+unharmed. REST of BODY </body>
+            <mediaURL>http://images.gnipherald.com/jousting-thumbnail.jpg</mediaURL>
+            <raw>base64 encoded gzip compressed binary</raw>
+        </payload>
+    </activity>
+</activities>
+ 
+
+Activity XML document conform to the following schema. Full Gnip XML
+schema can be found here <https://demo-v21.gnip.com/schema/gnip.xsd>.
+
+
+||
+
+...
+
+    <xs:element name="activity">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element name="at" type="xs:dateTime" minOccurs="1" maxOccurs="1" />
+                <xs:element name="action" type="xs:string" minOccurs="1" maxOccurs="1" />
+                <xs:element name="activityID" type="xs:string" minOccurs="0" maxOccurs="1" />
+                <xs:element name="URL" type="xs:anyURI" minOccurs="0" maxOccurs="1" />
+                <xs:element name="source" type="xs:string" minOccurs="0" maxOccurs="unbounded" />
+                <xs:element name="keyword" type="xs:string" minOccurs="0" maxOccurs="unbounded" />
+                <xs:element name="place" minOccurs="0" maxOccurs="unbounded">
+                    <xs:complexType>
+                        <xs:sequence>
+                            <xs:element name="point" type="pointType" minOccurs="0" maxOccurs="1" />
+                            <xs:element name="elev" type="xs:double" minOccurs="0" maxOccurs="1" />
+                            <xs:element name="floor" type="xs:integer" minOccurs="0" maxOccurs="1" />
+                            <xs:element name="featuretypetag" type="xs:string" minOccurs="0" maxOccurs="1" />
+                            <xs:element name="featurename" type="xs:string" minOccurs="0" maxOccurs="1" />
+                            <xs:element name="relationshiptag" type="xs:string" minOccurs="0" maxOccurs="1" />
+                        </xs:sequence>
+                    </xs:complexType>
+                </xs:element>
+                <xs:element name="actor" minOccurs="0" maxOccurs="unbounded">
+                    <xs:complexType>
+                        <xs:simpleContent>
+                            <xs:extension base="xs:string">
+                                <xs:attribute name="metaURL" use="optional" type="xs:anyURI" />
+                                <xs:attribute name="uid" use="optional" type="xs:string" />
+                            </xs:extension>
+                        </xs:simpleContent>
+                    </xs:complexType>
+                </xs:element>
+                <xs:element name="destinationURL" minOccurs="0" maxOccurs="unbounded">
+                    <xs:complexType>
+                        <xs:simpleContent>
+                            <xs:extension base="xs:anyURI">
+                                <xs:attribute name="metaURL" use="optional" type="xs:anyURI" />
+                            </xs:extension>
+                        </xs:simpleContent>
+                    </xs:complexType>
+                </xs:element>
+                <xs:element name="tag" minOccurs="0" maxOccurs="unbounded">
+                    <xs:complexType>
+                        <xs:simpleContent>
+                            <xs:extension base="xs:string">
+                                <xs:attribute name="metaURL" use="optional" type="xs:anyURI" />
+                            </xs:extension>
+                        </xs:simpleContent>
+                    </xs:complexType>
+                </xs:element>
+                <xs:element name="to" minOccurs="0" maxOccurs="unbounded">
+                    <xs:complexType>
+                        <xs:simpleContent>
+                            <xs:extension base="xs:string">
+                                <xs:attribute name="metaURL" use="optional" type="xs:anyURI" />
+                            </xs:extension>
+                        </xs:simpleContent>
+                    </xs:complexType>
+                </xs:element>
+                <xs:element name="regardingURL" minOccurs="0" maxOccurs="unbounded">
+                    <xs:complexType>
+                        <xs:simpleContent>
+                            <xs:extension base="xs:anyURI">
+                                <xs:attribute name="metaURL" use="optional" type="xs:anyURI" />
+                            </xs:extension>
+                        </xs:simpleContent>
+                    </xs:complexType>
+                </xs:element>
+                <xs:element name="payload" minOccurs="0" maxOccurs="1">
+                    <xs:complexType>
+                        <xs:sequence>
+                            <xs:element name="title" type="xs:string" minOccurs="0" maxOccurs="1" />
+                            <xs:element name="body" type="xs:normalizedString" minOccurs="0" maxOccurs="1" />
+                            <xs:element name="mediaURL" minOccurs="0" maxOccurs="unbounded">
+                                <xs:complexType>
+                                    <xs:simpleContent>
+                                        <xs:extension base="xs:anyURI">
+                                            <xs:attribute name="height" use="optional" type="xs:string" />
+                                            <xs:attribute name="width" use="optional" type="xs:string" />
+                                            <xs:attribute name="duration" use="optional" type="xs:string" />
+                                            <xs:attribute name="mimeType" use="optional" type="xs:string" />
+                                            <xs:attribute name="type" use="optional" type="xs:string" />
+                                        </xs:extension>
+                                    </xs:simpleContent>
+                                </xs:complexType>
+                            </xs:element>
+                            <xs:element name="raw" type="xs:base64Binary" minOccurs="1" maxOccurs="1" />
+                        </xs:sequence>
+                    </xs:complexType>
+                </xs:element>
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
+...
+</xs:schema>
+
+
+*Filters*
+
+A Filter consists of rules that are used to match activities flowing
+through a Publisher's activity stream.  Filters may be created, edited,
+and deleted at will by their owner. Filter rules are OR'd together;
+there is no AND support. Since your filter is created on a per publisher
+basis, the URI will reflect the namespace of that publisher ("my" or
+"gnip").
+
+
+If a Filter specifies a postURL, new activities that meet the collection
+criteria will be posted to the specified URL.  POSTed activities include
+*full data* by default.
+
+
+*https://demo-v21.gnip.com/my[gnip]/publishers/PUBLISHER-NAME/filters.xml*
+
+GET:
+    Returns the Filters XML document which lists all the filters,
+including their rules, you own for the specified Publisher.
+    Response Content-Type: application/xml
+
+POST:
+Accepts a Filter XML document and creates a new filter based on that
+information. If your Filter document is large it should be gzip'd, and
+sent with the "Content-Encoding: gzip" header. If you wish to update a
+filter, use PUT, described below.  POSTing a Filter twice with the same
+name will result in an error response from the server.
+Request Content-Type: application/xml
+Response Content-Type: application/xml
+
+*https://demo-v21.gnip.com/my[gnip]/publishers/PUBLISHER-NAME/filters/FILTER-NAME.xml*
+
+GET:
+Returns a Filter XML representation of the specified Filter.
+Response Content-Type: application/xml
+PUT:
+Accepts a Filter XML document and updates the specified Filter to match
+the data provided. Gnip will replace the existing Filter with this
+document. If you're trying to create a Filter for the first time, use
+POST, described above. For incremental updates of a Filter, see the next
+section "Editing Filter Rules."
+Request Content-Type: application/xml
+Response Content-Type: application/xml
+DELETE:
+Removes the specified Filter.
+
+*Filter** XML*
+
+
+Filter definitions are represented as XML documents similar to this.
+
+
+|<filter name="example" fullData="true|false">
+    <postURL>optional</postURL>
+    <rule type="actor">joe</rule>
+    <rule type="tag">cars</rule>
+</filter>
+|
+
+ 
+
+
+Filter XML document conform to the following schema. Full Gnip XML
+schema can be found here <https://demo-v21.gnip.com/schema/gnip.xsd>.
+
+
+    <xs:element name="filter">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element name="postURL" type="xs:anyURI" minOccurs="0" maxOccurs="1" />
+                <xs:element name="rule" type="rule" maxOccurs="unbounded" minOccurs="1" />
+            </xs:sequence>
+            <xs:attribute name="name" type="uriSafeType" use="required" />
+            <xs:attribute name="fullData" type="xs:boolean" use="required" />
+        </xs:complexType>
+    </xs:element>
+
+
+      *Editing Filter Rules*
+
+A Filter's rule set can be incrementally updated and queried via the
+Filter's /rules endpoint.  The rules endpoint can be used to add a
+single rule or to batch add a set of rules. The rules endpoint is
+namespaced based on the Publisher scope (either "my" or "gnip").
+
+Each publisher supports a different set of one or more rules. To review
+the list of supported rule types, you can view the schema document
+<https://demo-v21.gnip.com/schema/gnip.xsd>. Currently, the types are:
+
+*actor*
+
+*tag*
+
+*to*
+
+*regarding*
+
+*source*
+
+
+To find out if a publisher supports the rule types, you can look at the
+list of Publishers, the action types they support, and example XML
+output <http://gnip-community.googlegroups.com/web/publishers.html>.
+
+
+*
+https://demo-v21.gnip.com/my[gnip]/publishers/PUBLISHER-NAME/filters/FILTER-NAME/rules
+*
+GET:
+        Accepts a query string consisting of a single rule to search for
+in the Filter named FILTER-NAME.
+        For example:
+.../my[gnip]/publishers/PUBLISHER-NAME/filters/FILTER-NAME/rules?type=actor&value=joe
+        Request Content-Type: *
+        Response Content-Type: application/xml
+        Response Codes:
+            200: if the rule is found in the Filter.  The response body
+will contain the XML of found <rule/>.
+            404: if the rule could not be found.  
+POST:
+        Accepts two XML document types:
+            Send a rule XML document (e.g. <rule type="">value</rule> )
+to add a single rule to FILTER-NAME.
+            Send a rules XML document (e.g. <rules>...</rules>) that
+wraps one or more <rule/>  documents to batch add to FILTER-NAME.
+        For example:
+.../my[gnip]/publishers/PUBLISHER-NAME/filters/FILTER-NAME/rules.xml
+        Request Content-Type: application/xml
+        Response Content-Type: application/xml
+        Response Codes:
+            200: if an individual rule is successfully added to the
+Filter. 
+                    if sending a <rules/>  document, a 200 will be
+returned if the document is successfully received, but the server
+processes a batch update asynchronously, so for <rules/>  a 200 does not
+imply that they have been added to the Filter.  Use either the rules/
+endpoint to search for a newly added rule or a GET on the whole Filter
+to ensure all rules in the batch were added.
+            400: if adding a <rule/>  with a rule type that isn't
+supported by the publisher
+
+DELETE:
+Accepts a query string consisting of a *single* rule to be removed from
+FILTER-NAME.
+For example:
+.../my[gnip]/publishers/PUBLISHER-NAME/filters/FILTER-NAME/rules?type=actor&value=joe
+Request Content-Type: *
+Response Content-Type: *
+
+*Large Filters and the rules endpoint
+
+*When using filters on the Gnip Platform, the rule sets can grow "large"
+and have tens and hundreds of thousands (or more) rules used to match
+specific types of activities from a given Publisher.  In the case of
+large rule sets, the rule endpoint *must *be used to add rules to a
+large Filter due to the fact that making incremental changes by GETting,
+changing, and POSTing the entire <filter/>  XML document causes a
+needless exchange of many megabytes of data.  Instead, large Filters can
+be incrementally augmented by sending batches of up to
+5000 <rule/> documents wrapped inside a <rules/>  document to
+the rules/ endpoint.  For example, to add 100,000 rules to a Filter that
+has an existing 100,000 rules, send 20 <rules/>  documents containing
+5000 rules each rather than sending 100,000
+individual <rule/>  documents to the rules/  endpoint (which could take
+days) or than sending a PUT of the Filter containing 200,000 rules
+(which unnecessarily transmits large amounts of repetitive rules).
+
+POST:
+        Accepts two XML document types:
+            Send a rules XML document (e.g. <rules>...</rules>) that
+wraps one or more <rule/> documents to batch add to FILTER-NAME.
+        For
+example: .../my[gnip]/publishers/PUBLISHER-NAME/filters/FILTER-NAME/rules.xml
+        Request Content-Type: application/xml 
+        Response Content-Type: application/xml
+        Response Codes:
+            200: If the document is successfully received, but the
+server processes a batch update asynchronously. A 200 does not imply
+that the rules have been added to the Filter.  Use either the rules/
+endpoint to search for a newly added rule or a GET on the whole Filter
+to ensure all rules in the batch were added.
+            400: if adding a <rule/> with a rule type that isn't
+supported by the publisher
+
+*Publishers
+
+*
+
+Publishers are scoped to either be "system-wide" and publicly available
+(e.g. in the "gnip" namespace), or privately scoped in the "my"
+namespace. A current list of public Publishers in the Gnip system can be
+found here <https://demo-v21.gnip.com/publishers.html>. They are owned
+by a single account and only that account can manipulate the publisher
+definition and publish activities to its activity stream. A Publisher
+can move their private "my" Publisher feed to a GNIP endorsed by
+contacting GNIP.
+
+
+*https://demo-v21.gnip.com/my[gnip]/publishers.xml*
+
+*  *
+Different actions can be done by doing a get, post or a delete to the
+URL above*.*
+
+*Retrieve a list of publishers:
+* GET:
+    Returns a Publisher XML document listing of current Publisher's in
+the system. Use "gnip" in the URL to return the list of endorsed
+publicly available publishers and "my" to return your list of publishers.
+    Response Content-Type: application/xml
+
+*To create a new publisher:*
+POST:
+Accepts a Publisher XML <#Publisher_XML> document and creates a new
+publisher using that information. Post can only be done to the ".../my"
+scope. Only GNIP can create GNIP publishers. 
+Request Content-type: application/xml
+Response Content-Type: application/xml
+
+*To delete a publisher you own:*
+DELETE:
+        Accepts a query string consisting of a single pubisher to be
+removed using my for scope. Only GNIP can delete gnip publishers.
+        For example: .../my/publishers/PUBLISHER-NAME
+        Request Content-Type: *
+        Response Content-Type: *
+
+
+          Publisher XML
+
+Publisher definitions are represented as XML documents similar to this.
+As a Publisher you can define which rules you support.  Rule types today
+are: actor, tag, to, regarding and source. Below is an example of XML
+that has actor as supported.
+
+
+<publisher name="gnip-sample">
+    <supportedRuleTypes>
+        <type>actor</type>
+    </supportedRuleTypes>
+</publisher>
+
+  Publisher XML document conform to the following schema. Full Gnip XML
+schema can be found here <https://demo-v21.gnip.com/schema/gnip.xsd>.
+
+
+  ...
+    <xs:element name="publisher">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element name="supportedRuleTypes" minOccurs="1" maxOccurs="1">
+                    <xs:complexType>
+                        <xs:sequence>
+                            <xs:element name="type" type="ruleType" minOccurs="1" maxOccurs="unbounded" />
+                        </xs:sequence>
+                    </xs:complexType>
+                </xs:element>
+            </xs:sequence>
+            <xs:attribute name="name" type="uriSafeType" use="required" />
+        </xs:complexType>
+    </xs:element>
+...
+
+
+*Push Recipients
+*
+
+Filters can be subscribed to in such a way that any time activities are
+published that match the Filter criteria, those activities are pushed,
+via a HTTP POST, to a configurable URL. The URL to which activities will
+be pushed is specified by the postURL of the Filter XML. Any activities
+added to a Filter which has a <postURL/>, will automatically be POSTed
+to that URL.  The body of these POSTs will be an Activities XML document
+(described above in the Activity Buckets section <#Activity_Buckets>). 
+Responses to these requests are ignored. PostURLs must be valid.
+
+
+*http://mysite.example/inbound-activity-handler.cgi
+
+*
+
+POST:
+
+Pushes new activities, as an Activities XML <#Activities_XML> document,
+to the subcriber to this collection.
+
+Request Content-Type: |application/xml|
+
+
+        Activities XML
+
+A set of activities are represented in XML documents that look like
+this. Full Gnip XML schema can be found here
+<https://demo-v21.gnip.com/schema/gnip.xsd>.
+
+<?xml version="1.0" encoding="utf-16"?>
+<activities publisher="gnip-sample">
+    <activity>
+        <at>2009-02-02T17:16:01.000Z</at>
+        <action>post</action>
+        <activityID>0.516958128858</activityID>
+        <URL>http://gnipherald.com/stories/0.516958128858/jousting-gone-bad.xml</URL>
+        <source>Vignette-Web-Publisher</source>
+        <place>
+            <point>38.2638886 -106.126131</point>
+            <featurename>Chloride Mine</featurename>
+        </place>
+        <actor uid="12339948@4994" metaURL="http://gnipherald.com/profiles/jvaleski">jvaleski</actor>
+        <destinationURL>http://gnipherald.com/stories/0.516958128858/jousting-gone-bad.html</destinationURL>
+        <tag metaURL="http://gnipherald/about/tag/armor">armor</tag>
+        <tag metaURL="http://gnipherald/about/tag/staff">staff</tag>
+        <tag metaURL="http://gnipherald/about/tag/injury">injury</tag>
+        <to metaURL="http://gnipherald.com/profiles/barinek">barinek</to>
+        <regardingURL metaURL="http://apnewswire.com/jousting">http://apnewswire.com/jousting/accident.html</regardingURL>
+        <payload>
+            <title>Jousting Event Went Awry</title>
+            <body> Two drunken guys, two jousting sticks, blindfolds and running full bore down a hallway at each other, lead to a night in hospital for two university students. One with chest injury the other unharmed. REST of BODY </body>
+            <mediaURL>http://images.gnipherald.com/jousting-thumbnail.jpg</mediaURL>
+            <raw>base64 encoded gzip compressed binary</raw>
+        </payload>
+    </activity>
+</activities>
+
+
+      Errors
+
+In the event of Gnip being unable to fulfill a request it will return a
+response with the most appropriate response code and a human readable
+message in the body.  If the request could not be fulfilled because
+there was something wrong with the request a 4xx series response code
+will be used.  If the request was not fulfilled for any other reason a
+5xx series response code will be used.
+
+*Error XML*
+
+
+An error represented in XML looks like this:
+
+
+<error>"foo_bar" is not a valid publisher name. Only letter, number,
+'.', '+' and '-' characters are allowed in publisher names.</error>
+
+
+Remember, depending on your HTTP client, an <error/> message may only be
+available as part of an error input stream in the event that the server
+returns an HTTP response with a non-200 response code.  For example, in
+the case of Java's java.net.HttpURLConnection, the <error/> message
+would be available via the getErrorStream() method.
+
+
+*Revision History*
+
+    * rev 12 - Update to delete URL endpoint
+    * rev 11 - Changed Publishers and Subscribers to Data Producers and
+      Data Consumers.  Fixed URLs, added publishing to an activity, did
+      color changes. 
+    * rev 10 - changed XML examples from gnipherald publisher to gnip-sample
+    * rev 9 - updated xml examples to include final schema, added delete
+      publisher example
+    * rev 8 - minor editing tweaks
+    * rev 7 - some minor editing tweaks
+    * rev 6 - new schema, version 2.1
+    * rev 5 - added documentation for batch and search support in the
+      rules/ endpoint.  Added documentation to the Activities section of
+      the samples.  Rearranged some links and made some XML formatting
+      changes.
+    * rev 4 - updated for publisher capabilities, added paragraph on
+      authentication for activity push, remove references to JIDs,
+      document cleanup
+    * rev 3 - updating publisher activity endpoint to reflect the
+      correct one.
+    * rev 2 - added verbiage to further clarify filter management.
+    * rev 1 - moved bucket-ID API from five minute buckets to single
+      minute buckets
+    * rev 0 - initial cut of the 2.0 document
+
+
+
+
+
+
+
+
+Edit this page (if you have permission)
+<Edit?tab=edit&dr=true&docid=dpw6zj9_0fdcnttgd> |
+Google Docs -- Web word processing, presentations and spreadsheets. </>
+
+ 
+

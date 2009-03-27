@@ -1,0 +1,72 @@
+---
+
+. gem release
+
+. more sample programs
+
+. tests for bin/gnip using yaml output
+
+. flesh out rather minimal tests
+
+. yank out shoulda for testing?
+
+. unify some of the (to/from)_(hash/yaml) stuff across the lib
+
+. abstract builder! pattern out for all Attributes
+
+
+
+---
+.activity
+  . payload compress/decompress
+  . publishing to publisher
+    . curl --data-binary @activity.xml -H 'Content-Type:application/xml' --silent --user ara.t.howard@gmail.com:password https://api-v21.gnip.com/my/publishers/pub/activity.xml
+  . display of payload/raw from commandline
+
+. version
+
+. clean up pluralization in lib
+
+. sample program
+
+. server callbacks
+
+. flush out bin/gnip
+
+. decide between tagz vs erb for xml generation
+
+. html escape
+  . CGI.escapeHTML(CGI.escapeHTML('world & business'))
+
+. filter-rules
+  . get
+  . post
+  . delete
+  . post in bulk (stdin)
+
+. filters
+  . create
+  . list
+  . delete
+  . update/replace/put
+  . rule post in bulk (stdin)
+
+. publisher
+  . create
+  . delete
+  . notifications
+    . current
+    . by timestamp
+    . ago
+  . extract rule types from xml
+
+. gnip
+  . clock delta
+
+. samples
+
+. http wrapper/resource
+. my vs gnip
+. safe login uri
+. setup test environment for unit + integration w/shoulda
+. get access to docs

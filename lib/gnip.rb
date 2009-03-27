@@ -1,42 +1,71 @@
-require 'rubygems'
-require 'base64'
-require 'xmlsimple'
-require 'net/http'
-require 'net/https'
-require 'zlib'
-require 'time'
-require 'logger'
-require 'cgi'
-require 'pathname'
-require Pathname(__FILE__).dirname + 'ext/time'
+# built-in libs
+#
+  require 'yaml'
+  require 'time'
+  require 'zlib'
+  require 'enumerator'
+  require 'base64'
+  # require 'erb'
 
-class Gnip
-  class << self
-    attr_accessor :connection
+# gems and third party libs
+#
+  begin
+    require 'rubygems'
+    gem 'tagz', '>= 5.0.1'
+  rescue LoadError
+    'oh noes!'
+  end
 
-    # @return [Logger]   The logger that is used by this library.
-    def logger    
-      if connection
-        connection.config.logger
-      else
-        # Fake a logger up so that we can muddle through until we are configured properly.
-        l = Logger.new(STDERR)
-        l.level = Logger::INFO
-        return l
-      end
+  begin
+    require 'restclient'
+  rescue
+    abort 'sudo gem install rest-client'
+  end
+
+  begin
+    require 'nokogiri'
+  rescue
+    abort 'sudo gem install nokogiri #=> depends on libxml + libxslt'
+  end
+
+  begin
+    require 'tagz'
+  rescue
+    abort 'sudo gem install tagz'
+  end
+
+  begin
+    require 'threadify'
+  rescue
+    abort 'sudo gem install threadify'
+  end
+
+# gnip libs
+#
+  module Gnip
+    Version = '1.0.0'
+
+    def version
+      Gnip::Version
     end
+
+    def libdir(*args)
+      @libdir ||= File.expand_path(__FILE__).sub(/\.rb$/,'')
+      args.empty? ? @libdir : File.join(@libdir, *args)
+    end
+    extend self
   end
 
-  def self.header_xml
-    '<?xml version="1.0" encoding="UTF-8"?>'
-  end
-
-  class Gnip::Base
-  end
-
-  dir = File.dirname(__FILE__)
-  Dir["#{dir}/gnip/*.rb"].each do |file|
-    require file
-  end
-end
-
+  require Gnip.libdir('util')
+  require Gnip.libdir('orderedhash')
+  # require Gnip.libdir('blankslate')
+  require Gnip.libdir('arguments')
+  require Gnip.libdir('options')
+  require Gnip.libdir('list')
+  require Gnip.libdir('config')
+  require Gnip.libdir('resource')
+  # require Gnip.libdir('template')
+  require Gnip.libdir('publisher')
+  require Gnip.libdir('filter')
+  require Gnip.libdir('activity')
+  require Gnip.libdir('api')

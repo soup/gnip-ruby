@@ -1,0 +1,21 @@
+---
+at: 2009-01-01
+action: post
+sources:
+  - one
+  - two
+actors:
+  -
+    content: jane
+    uid: 1234
+  - john
+places:
+  -
+    elev : 5000
+    point : [40, 102]
+payload:
+  body: foobar
+  raw: @sample/data/activity.yml
+  media_urls:
+    content: http://media.fukung.net/images/2662/westley_willis.jpg
+    height: 42

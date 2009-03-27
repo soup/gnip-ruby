@@ -1,0 +1,36 @@
+<activity>
+  <place>
+    <point>45.256 -71.92</point>
+  </place>
+  <place>
+    <featurename>Boulder</featurename>
+    <featuretypetag>City</featuretypetag>
+    <floor>3</floor>
+    <point>22.778 -54.998</point>
+    <elev>5280</elev>
+  </place>
+  <place>
+    <point>77.900 -23.998</point>
+  </place>
+  <regardingURL metaURL="http://blogger.com/users/mary">
+  http://blogger.com/users/posts/mary</regardingURL>
+  <regardingURL>http://blogger.com/users/posts/james</regardingURL>
+  <actor metaURL="http://www.gnipcentral.com/users/joe" uid="1222">
+  Joe</actor>
+  <actor metaURL="http://www.gnipcentral.com/users/bob">Bob</actor>
+  <actor uid="1444">Susan</actor>
+  <tag metaURL="http://gnipcentral.com/tags/horses">horses</tag>
+  <tag>cows</tag>
+  <URL>http://www.gnipcentral.com</URL>
+  <action>post</action>
+  <destinationURL>http://somewhere.com</destinationURL>
+  <destinationURL>http://somewhere.com/someplace</destinationURL>
+  <destinationURL>http://flickr.com</destinationURL>
+  <to metaURL="http://gnipcentral.com/users/mary">Mary</to>
+  <to>James</to>
+  <at>2008-07-02T11:16:16.000Z</at>
+  <keyword>ping</keyword>
+  <keyword>pong</keyword>
+  <source>web</source>
+  <source>sms</source>
+</activity>

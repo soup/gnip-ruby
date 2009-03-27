@@ -1,0 +1,14 @@
+<activity>
+  <regardingURL>http://blogger.com/users/posts/mary</regardingURL>
+  <activityID>yk994589klsl</activityID>
+  <actor metaURL="http://www.gnipcentral.com/users/joe" uid="1222">
+  Joe</actor>
+  <tag metaURL="http://gnipcentral.com/tags/horses">horses</tag>
+  <URL>http://www.gnipcentral.com</URL>
+  <action>post</action>
+  <destinationURL>http://somewhere.com/someplace</destinationURL>
+  <to metaURL="http://gnipcentral.com/users/mary">Mary</to>
+  <at>2008-07-02T11:16:16.000Z</at>
+  <keyword>ping</keyword>
+  <source>web</source>
+</activity>
