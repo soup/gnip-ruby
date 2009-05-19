@@ -28,6 +28,7 @@ Gem::Specification::new do |spec|
   spec.add_dependency 'rest-client'
   spec.add_dependency 'nokogiri'
   spec.add_dependency 'threadify'
+  spec.add_dependency 'main'
   spec.add_dependency 'tagz', '>= 5.0.1'
 
   spec.extensions << "extconf.rb" if File::exists? "extconf.rb"
