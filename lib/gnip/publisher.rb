@@ -212,6 +212,7 @@ module Gnip
 
       filter = options.getopt(:filter)
       filter = filter.value if(filter and filter.respond_to?(:value))
+      filter = filter.name if(filter and filter.respond_to?(:name))
 
       buckets =
         if thru
