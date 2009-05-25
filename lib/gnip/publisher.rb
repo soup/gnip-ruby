@@ -240,8 +240,10 @@ module Gnip
         path = "#{ style }/#{ bucket }.xml"
         path = "filters/#{ filter }/#{ path }" if filter
         xml = resource[path].get
-        list = Activity.list_from_xml(xml, &block)
-        activities.push(*list) unless block
+        Activity.list_from_xml(xml) do |activity|
+          activity.gnip_resource_uri = resource[path].uri
+          block ? block.call(activity) : activities.push(activity)
+        end
       end
 
       activities unless block

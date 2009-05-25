@@ -269,6 +269,8 @@ module Gnip
         @payload = Payload.for(value)
       end
 
+    attr_accessor :gnip_resource_uri
+
     def initialize(options = {})
       options = Gnip.options_for(options)
       options.each{|key, value| send("#{ key }=", value)}

@@ -165,7 +165,7 @@ module Gnip
         def wrapping_errors
           begin
             yield
-          rescue Exception => error
+          rescue => error
             message = []
             message << error.message if error.respond_to?(:message) rescue nil
             message << error.response.body if error.respond_to?(:response) rescue nil
