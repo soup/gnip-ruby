@@ -228,6 +228,10 @@ module Gnip
           end
         end
 
+      buckets.map! do |bucket|
+        bucket.is_a?(Time) ? bucket.strftime('%Y%m%d%H%M') : bucket
+      end
+
       activities = []
 
       msg = buckets.size > 1 ? 'threadify' : 'each'
