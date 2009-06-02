@@ -200,9 +200,11 @@ module Gnip
     def to_xml(*args)
       tagz {
         filter_(:name => name, :fullData => !!full_data){
+          postURL_{ post_url } if post_url
           rules.each do |rule|
             rule_(:type => rule.type){ rule.value }
           end
+          nil
         }
       }
     end
