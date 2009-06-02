@@ -286,6 +286,11 @@ module Gnip
         rule
       end
 
+      def for(*args)
+        rule = Rule.for(*args)
+        list(:type => rule.type, :value => rule.value)
+      end
+
       def delete options = {}
         list(options).delete(:filter => filter)
       end

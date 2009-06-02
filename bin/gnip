@@ -633,7 +633,7 @@ Main {
             publisher = Gnip.publisher.for(publisher_name, :scope => scope)
             if publisher
               filter = publisher.filter.for(filter_name)
-              rule = filter.rule.list(:type => type, :value => value)
+              rule = filter.rule.for(:type => type, :value => value)
               rule.delete
               y rule
             else
