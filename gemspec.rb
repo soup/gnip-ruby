@@ -1,7 +1,7 @@
 
   Gem::Specification::new do |spec|
     spec.name = "gnip"
-    spec.version = "1.1.0"
+    spec.version = "1.1.1"
     spec.platform = Gem::Platform::RUBY
     spec.summary = "gnip"
 
@@ -12,16 +12,14 @@
 
     spec.has_rdoc = true
     spec.test_files = nil
+    #spec.add_dependency 'lib', '>= version'
+    #spec.add_dependency 'fattr'
 
-    spec.add_dependency 'rest-client'
-    spec.add_dependency 'nokogiri'
-    spec.add_dependency 'threadify'
-    spec.add_dependency 'main'
-    spec.add_dependency 'tagz', '>= 5.0.1'
+    spec.extensions.push(*["rakefile", "Rakefile"])
 
-    spec.rubyforge_project = 'gnip'
+    spec.rubyforge_project = 'codeforpeople'
     spec.author = "Ara T. Howard"
     spec.email = "ara.t.howard@gmail.com"
-    spec.homepage = "http://github.com/gnip/gnip-ruby/tree/master"
+    spec.homepage = "http://github.com/ahoward/gnip/tree/master"
   end
 
