@@ -43,7 +43,7 @@
 # gnip libs
 #
   module Gnip
-    Version = '1.1.1'
+    Version = '1.1.2'
 
     def version
       Gnip::Version
