@@ -1,8 +1,8 @@
 
-This.rubyforge_project = 'codeforpeople'
 This.author = "Ara T. Howard"
 This.email = "ara.t.howard@gmail.com"
-This.homepage = "http://github.com/ahoward/#{ This.lib }/tree/master"
+This.rubyforge_project = 'gnip'
+This.homepage = 'http://github.com/gnip/gnip-ruby/tree/master'
 
 
 task :default do
@@ -35,15 +35,6 @@ task :gemspec do
   has_rdoc    = true #File.exist?('doc')
   test_files  = "test/#{ lib }.rb" if File.file?("test/#{ lib }.rb")
 
-  extensions = This.extensions
-  if extensions.nil?
-    %w( Makefile configure extconf.rb ).each do |ext|
-      extensions << ext if File.exists?(ext)
-    end
-  end
-  extensions = [extensions].flatten.compact
-
-
   template = 
     if test(?e, 'gemspec.erb')
       Template{ IO.read('gemspec.erb') }
@@ -66,10 +57,6 @@ task :gemspec do
 
             spec.has_rdoc = #{ has_rdoc.inspect }
             spec.test_files = #{ test_files.inspect }
-            #spec.add_dependency 'lib', '>= version'
-            #spec.add_dependency 'fattr'
-
-            spec.extensions.push(*#{ extensions.inspect })
 
             spec.rubyforge_project = #{ This.rubyforge_project.inspect }
             spec.author = #{ This.author.inspect }
