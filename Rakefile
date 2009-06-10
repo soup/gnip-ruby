@@ -1,53 +1,221 @@
-task 'default' => 'test:all'
 
-namespace 'test' do
-  desc 'run all tests'
-    task 'all' => %w[ unit integration ] do
-    end
+This.rubyforge_project = 'codeforpeople'
+This.author = "Ara T. Howard"
+This.email = "ara.t.howard@gmail.com"
+This.homepage = "http://github.com/ahoward/#{ This.lib }/tree/master"
 
-  desc 'run unit tests'
-    task 'unit' do
-      %w[
-        activity
-      ].each do |basename|
-        test_loader "test/unit/#{ basename }.rb"
+
+task :default do
+  puts(Rake::Task.tasks.map{|task| task.name} - ['default'])
+end
+
+
+task :gemspec do
+  ignore_extensions = 'git', 'svn', 'tmp', /sw./, 'bak', 'gem'
+  ignore_directories = 'pkg'
+
+  shiteless = 
+    lambda do |list|
+      list.delete_if do |entry|
+        next unless test(?e, entry)
+        extension = File.basename(entry).split(%r/[.]/).last
+        ignore_extensions.any?{|ext| ext === extension}
+      end
+      list.delete_if do |entry|
+        next unless test(?d, entry)
+        dirname = File.expand_path(entry)
+        ignore_directories.any?{|dir| File.expand_path(dir) == dirname}
       end
     end
 
-  desc 'run integration tests'
-    task 'integration' do
-      %w[
-        auth
-        publisher
-      ].each do |basename|
-        test_loader "test/integration/#{ basename }.rb", :require_auth => true
-      end
+  lib         = This.lib
+  version     = This.version
+  files       = shiteless[Dir::glob("**/**")]
+  executables = shiteless[Dir::glob("bin/*")].map{|exe| File.basename(exe)}
+  has_rdoc    = true #File.exist?('doc')
+  test_files  = "test/#{ lib }.rb" if File.file?("test/#{ lib }.rb")
+
+  extensions = This.extensions
+  if extensions.nil?
+    %w( Makefile configure extconf.rb ).each do |ext|
+      extensions << ext if File.exists?(ext)
     end
+  end
+  extensions = [extensions].flatten.compact
+
+
+  template = 
+    if test(?e, 'gemspec.erb')
+      Template{ IO.read('gemspec.erb') }
+    else
+      Template {
+        <<-__
+          ## #{ This.gemspec }
+          #
+
+          Gem::Specification::new do |spec|
+            spec.name = #{ lib.inspect }
+            spec.version = #{ version.inspect }
+            spec.platform = Gem::Platform::RUBY
+            spec.summary = #{ lib.inspect }
+
+            spec.files = #{ files.inspect }
+            spec.executables = #{ executables.inspect }
+            
+            spec.require_path = "lib"
+
+            spec.has_rdoc = #{ has_rdoc.inspect }
+            spec.test_files = #{ test_files.inspect }
+            #spec.add_dependency 'lib', '>= version'
+            #spec.add_dependency 'fattr'
+
+            spec.extensions.push(*#{ extensions.inspect })
+
+            spec.rubyforge_project = #{ This.rubyforge_project.inspect }
+            spec.author = #{ This.author.inspect }
+            spec.email = #{ This.email.inspect }
+            spec.homepage = #{ This.homepage.inspect }
+          end
+        __
+      }
+    end
+
+  open(This.gemspec, "w"){|fd| fd.puts template}
 end
 
-task 'test' => 'test:all' do
+task :gem => [:clean, :gemspec] do
+  Fu.mkdir_p This.pkgdir
+  before = Dir['*.gem']
+  cmd = "gem build #{ This.gemspec }"
+  `#{ cmd }`
+  after = Dir['*.gem']
+  gem = ((after - before).first || after.first) or abort('no gem!')
+  Fu.mv gem, This.pkgdir
+  This.gem = File.basename(gem)
 end
 
-namespace 'gem' do
-  task 'build' do
-    sh 'gemspec.rb'
+task :readme do
+  samples = ''
+  prompt = '~ > '
+  lib = This.lib
+  version = This.version
+
+  Dir['sample*/*'].sort.each do |sample|
+    samples << "\n" << "  <========< #{ sample } >========>" << "\n\n"
+
+    cmd = "cat #{ sample }"
+    samples << Util.indent(prompt + cmd, 2) << "\n\n"
+    samples << Util.indent(`#{ cmd }`, 4) << "\n"
+
+    cmd = "ruby #{ sample }"
+    samples << Util.indent(prompt + cmd, 2) << "\n\n"
+
+    cmd = "ruby -e'STDOUT.sync=true; exec %(ruby -Ilib #{ sample })'"
+    samples << Util.indent(`#{ cmd } 2>&1`, 4) << "\n"
   end
-  task 'release' => 'build' do
-    gem = Dir['gnip*.gem'].sort.last or abort('no gem!')
-    version = gem[%r/[\d.]+/]
-    command = "rubyforge login && rubyforge add_release gnip 'gnip' '#{ version }' '#{ gem }'"
-    sh command
-  end
+
+  template = 
+    if test(?e, 'readme.erb')
+      Template{ IO.read('readme.erb') }
+    else
+      Template {
+        <<-__
+          NAME
+            #{ lib }
+
+          DESCRIPTION
+
+          INSTALL
+            gem install #{ lib }
+
+          SAMPLES
+            #{ samples }
+        __
+      }
+    end
+
+  open("README", "w"){|fd| fd.puts template}
 end
+
+
+task :clean do
+  Dir[File.join(This.pkgdir, '**/**')].each{|entry| Fu.rm_rf(entry)}
+end
+
+
+task :release => [:clean, :gemspec, :gem] do
+  gems = Dir[File.join(This.pkgdir, '*.gem')].flatten
+  raise "which one? : #{ gems.inspect }" if gems.size > 1
+  raise "no gems?" if gems.size < 1
+  cmd = "rubyforge login && rubyforge add_release #{ This.rubyforge_project } #{ This.lib } #{ This.version } #{ This.pkgdir }/#{ This.gem }"
+  puts cmd
+  system cmd
+end
+
+
+
+
 
 BEGIN {
-  Dir.chdir(File.dirname(__FILE__))
-  ENV['PATH'] = [ '.', './bin/', ENV['PATH'] ].join(File::PATH_SEPARATOR)
+  $VERBOSE = nil
 
-  def test_loader basename, options = {}
-    auth = '-r test/auth.rb ' if options[:require_auth]
-    command = "ruby -r test/loader.rb #{ auth }#{ basename }"
-    STDERR.print "\n==== TEST ====\n\n  #{ command }\n\n==============\n\n"
-    system command or abort("#{ command } # FAILED WITH #{ $?.inspect }")
+  require 'ostruct'
+  require 'erb'
+  require 'fileutils'
+
+  Fu = FileUtils
+
+  This = OpenStruct.new
+
+  This.file = File.expand_path(__FILE__)
+  This.dir = File.dirname(This.file)
+  This.pkgdir = File.join(This.dir, 'pkg')
+
+  This.lib = ENV['LIB']
+  This.lib ||= 'gnip'
+
+  version = ENV['VERSION']
+  unless version
+    name = This.lib.capitalize
+    require "./lib/#{ This.lib }"
+    version = eval(name).send(:version)
   end
+  This.version = version
+
+  abort('no lib') unless This.lib
+  abort('no version') unless This.version
+
+  This.gemspec = "gnip-ruby.gemspec"
+
+  module Util
+    def indent(s, n = 2)
+      s = unindent(s)
+      ws = ' ' * n
+      s.gsub(%r/^/, ws)
+    end
+
+    def unindent(s)
+      indent = nil
+      s.each do |line|
+      next if line =~ %r/^\s*$/
+      indent = line[%r/^\s*/] and break
+    end
+    indent ? s.gsub(%r/^#{ indent }/, "") : s
+  end
+    extend self
+  end
+
+  class Template
+    def initialize(&block)
+      @block = block
+      @template = block.call.to_s
+    end
+    def expand(b=nil)
+      ERB.new(Util.unindent(@template)).result(b||@block)
+    end
+    alias_method 'to_s', 'expand'
+  end
+  def Template(*args, &block) Template.new(*args, &block) end
+
+  Dir.chdir(This.dir)
 }
