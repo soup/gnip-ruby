@@ -116,7 +116,7 @@ module Gnip
     class Rule < ::String
       List = []
 
-      %w[ actor tag to regarding source keyword ].each do |name|
+      %w[ actor tag to regarding source keyword action ].each do |name|
         module_eval <<-code
           def Rule.#{ name }
             @#{ name } ||= Rule.new('#{ name }').freeze
